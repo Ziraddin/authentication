@@ -1,12 +1,12 @@
-require("dotenv").config()
+require("dotenv").config();
+var md5 = require("md5");
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
+
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -37,27 +37,21 @@ app.get("/register", function(req, res){
 
 app.post("/register", function(req, res){
    
+    const newUser  = new User({
 
-    bcrypt.hash(req.body.password, saltRounds, function(err, hash){
+        email: req.body.username,
+        password: md5(req.body.password)
+    })
+    newUser.save(function(err){
 
-        const newUser  = new User({
+        if(err){
 
-            email: req.body.username,
-            password: hash
-        })
-        newUser.save(function(err){
-    
-            if(err){
-    
-                console.log(err);
-            } 
-            else{
-                   res.render("secrets");
-            }
-        });
-
+            console.log(err);
+        } 
+        else{
+               res.render("secrets");
+        }
     });
-    
 })
 
 
@@ -69,7 +63,7 @@ app.get("/login", function(req, res){
 app.post("/login", function(req, res){
 
     const getUsername = req.body.username;
-    const getPassword = req.body.password;
+    const getPassword = md5(req.body.password);
 
     User.findOne({"email": getUsername}, function(err, foundUser){
 
@@ -79,19 +73,10 @@ app.post("/login", function(req, res){
           }
           else{
             if(foundUser){
-                bcrypt.compare(getPassword, foundUser.password, function(err, result){
+                if(foundUser.password === getPassword){
 
-                    if(err){
-                        console.log(err);
-                    }
-                    else{
-
-                        if(result === true){
-
-                            res.render("secrets");
-                        }
-                    }
-                })
+                    res.render("secrets");
+                }
             }
           }
     }) 
