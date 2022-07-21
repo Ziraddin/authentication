@@ -30,6 +30,7 @@ const userSchema =  new mongoose.Schema({
 
     email: String,
     password: String,
+    secrets: [],
     googleId: String,
     facebookId: String
 })
@@ -112,14 +113,20 @@ app.get("/register", function(req, res){
 
 app.get("/secrets", function(req, res){
 
-    if(req.isAuthenticated()){
+   User.find({"secret": {$ne:null}}, function(err, foundUsers){
 
-        res.render("secrets");
-    }
-    else{
+      if(err){
 
-        res.redirect("/login");
-    }
+        console.log(err)
+      }
+      else{
+
+        if(foundUsers){
+
+          res.render("secrets", {usersSecrets: foundUsers})
+        }
+      }
+   })
 })
 
 app.post("/register", function(req, res){
@@ -184,5 +191,39 @@ app.get("/logout", function(req, res){
     });
     
 })
+
+app.get("/submit", function(req, res){
+
+  if(req.isAuthenticated()){
+
+    res.render("submit");
+  }
+  else{
+
+    res.redirect("/login");
+  }
+})
+
+app.post("/submit", function(req, res){
+
+  const submittedSecret = req.body.secret;
+
+  User.findById(req.user.id, function(err, foundUser){
+
+    if(err){
+
+      console.log(err);
+    }
+    else{
+      if(foundUser){
+
+        foundUser.secrets.push(submittedSecret);
+        foundUser.save(()=>{ res.redirect("/secrets")});
+      }
+    }
+  })
+})
+
+
 
 app.listen(3000, () => { console.log("Server is running on port 3000");})
